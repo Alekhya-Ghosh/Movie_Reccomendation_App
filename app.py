@@ -109,11 +109,13 @@ st.set_page_config(
     layout="wide"
 )
 
-# Initialize session state for movie details
-if 'show_details' not in st.session_state:
-    st.session_state.show_details = None
-if 'movie_details' not in st.session_state:
-    st.session_state.movie_details = None
+# Initialize session state
+if 'current_movie_details' not in st.session_state:
+    st.session_state.current_movie_details = None
+if 'movies' not in st.session_state:
+    st.session_state.movies = []
+if 'recommendations' not in st.session_state:
+    st.session_state.recommendations = []
 
 # Sidebar for API key input
 st.sidebar.title("🔑 API Configuration")
@@ -176,27 +178,63 @@ if client.api_key and client.api_key != "your_actual_api_key_here":
         with col2:
             search_year = st.text_input("Year (optional):", placeholder="e.g., 2010", key="year_input")
 
-        # Clear details when new search is performed
+        # Search button
         if st.button("Search Movies", key="search_btn") and search_query:
-            st.session_state.show_details = None
-            st.session_state.movie_details = None
+            st.session_state.current_movie_details = None  # Clear previous details
             with st.spinner("Searching for movies..."):
                 movies = client.search_movies(search_query, search_year)
-
                 if movies:
+                    st.session_state.movies = movies
                     st.success(f"Found {len(movies)} movies!")
-                    st.session_state.movies = movies  # Store movies in session state
+                else:
+                    st.session_state.movies = []
+                    st.error("No movies found. Please try a different search term.")
 
-        # Display movies from session state or new search
-        if 'movies' in st.session_state and st.session_state.movies:
-            movies = st.session_state.movies
+        # Display current movie details if any
+        if st.session_state.current_movie_details:
+            st.markdown("---")
+            st.header("🎭 Movie Details")
+            details = st.session_state.current_movie_details
+
+            col1, col2 = st.columns([1, 2])
+
+            with col1:
+                if details.get('Poster') and details['Poster'] != 'N/A':
+                    st.image(details['Poster'], use_column_width=True)
+                else:
+                    st.info("No poster available")
+
+            with col2:
+                st.subheader(details['Title'])
+                st.write(f"**Year:** {details.get('Year', 'N/A')}")
+                st.write(f"**Rated:** {details.get('Rated', 'N/A')}")
+                st.write(f"**Released:** {details.get('Released', 'N/A')}")
+                st.write(f"**Runtime:** {details.get('Runtime', 'N/A')}")
+                st.write(f"**Genre:** {details.get('Genre', 'N/A')}")
+                st.write(f"**Director:** {details.get('Director', 'N/A')}")
+                st.write(f"**Actors:** {details.get('Actors', 'N/A')}")
+                st.write(f"**IMDB Rating:** {details.get('imdbRating', 'N/A')}/10")
+                st.write(f"**IMDB Votes:** {details.get('imdbVotes', 'N/A')}")
+
+            st.markdown("### 📖 Plot")
+            st.write(details.get('Plot', 'No plot available'))
+
+            if st.button("Close Details"):
+                st.session_state.current_movie_details = None
+                st.rerun()
+
+        # Display movies
+        if st.session_state.movies:
+            st.markdown("---")
+            st.subheader("🎬 Search Results")
 
             # Display movies in a grid
             cols = st.columns(3)
-            for i, movie in enumerate(movies):
+            for i, movie in enumerate(st.session_state.movies):
                 with cols[i % 3]:
                     with st.container():
-                        st.subheader(movie['Title'])
+                        # Movie card
+                        st.write(f"### {movie['Title']}")
 
                         # Poster
                         if movie.get('Poster') and movie['Poster'] != 'N/A':
@@ -207,51 +245,15 @@ if client.api_key and client.api_key != "your_actual_api_key_here":
                         st.write(f"**Year:** {movie.get('Year', 'N/A')}")
                         st.write(f"**Type:** {movie.get('Type', 'N/A').title()}")
 
-                        # Get detailed information
+                        # View Details button
                         if st.button(f"View Details", key=f"view_{i}"):
                             with st.spinner("Loading details..."):
                                 details = client.get_movie_details(movie['imdbID'])
                                 if details:
-                                    st.session_state.show_details = movie['imdbID']
-                                    st.session_state.movie_details = details
+                                    st.session_state.current_movie_details = details
                                     st.rerun()
 
                         st.markdown("---")
-
-            # Show movie details if a movie was selected
-            if st.session_state.show_details and st.session_state.movie_details:
-                st.markdown("---")
-                st.header("🎭 Movie Details")
-                details = st.session_state.movie_details
-
-                col1, col2 = st.columns([1, 2])
-
-                with col1:
-                    if details.get('Poster') and details['Poster'] != 'N/A':
-                        st.image(details['Poster'], width=300)
-                    else:
-                        st.info("No poster available")
-
-                with col2:
-                    st.subheader(details['Title'])
-                    st.write(f"**Year:** {details.get('Year', 'N/A')}")
-                    st.write(f"**Rated:** {details.get('Rated', 'N/A')}")
-                    st.write(f"**Released:** {details.get('Released', 'N/A')}")
-                    st.write(f"**Runtime:** {details.get('Runtime', 'N/A')}")
-                    st.write(f"**Genre:** {details.get('Genre', 'N/A')}")
-                    st.write(f"**Director:** {details.get('Director', 'N/A')}")
-                    st.write(f"**Actors:** {details.get('Actors', 'N/A')}")
-                    st.write(f"**IMDB Rating:** {details.get('imdbRating', 'N/A')}/10")
-                    st.write(f"**IMDB Votes:** {details.get('imdbVotes', 'N/A')}")
-
-                st.markdown("### Plot")
-                st.write(details.get('Plot', 'No plot available'))
-
-                # Button to close details
-                if st.button("Close Details"):
-                    st.session_state.show_details = None
-                    st.session_state.movie_details = None
-                    st.rerun()
 
     elif app_mode == "Get Recommendations":
         st.header("🎯 Get Movie Recommendations")
@@ -278,22 +280,24 @@ if client.api_key and client.api_key != "your_actual_api_key_here":
         if st.button("Get Recommendations", key="rec_btn") and favorite_movie:
             with st.spinner("Finding recommendations..."):
                 recommendations = client.get_recommendations(favorite_movie, num_recommendations)
-
                 if recommendations:
-                    st.success(f"Found {len(recommendations)} recommendations!")
                     st.session_state.recommendations = recommendations
+                    st.success(f"Found {len(recommendations)} recommendations!")
+                else:
+                    st.session_state.recommendations = []
+                    st.error("No recommendations found. Please try a different movie.")
 
-        # Display recommendations from session state
-        if 'recommendations' in st.session_state and st.session_state.recommendations:
-            recommendations = st.session_state.recommendations
+        # Display recommendations
+        if st.session_state.recommendations:
+            st.markdown("---")
+            st.subheader("🎭 Recommended Movies")
 
             # Display recommendations in a grid
             cols = st.columns(2)
-
-            for i, movie in enumerate(recommendations):
+            for i, movie in enumerate(st.session_state.recommendations):
                 with cols[i % 2]:
                     with st.container():
-                        st.subheader(f"🎭 {movie['Title']}")
+                        st.write(f"### {movie['Title']}")
 
                         # Movie poster and info in columns
                         col_img, col_info = st.columns([1, 2])
