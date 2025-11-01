@@ -10,6 +10,7 @@ st.set_page_config(
 
 # Check if session state variables exist, if not initialize them
 if 'api_key' not in st.session_state:
+    # This should be populated by the main page, but initializing is safe
     st.session_state.api_key = ""
 if 'selected_movie_id' not in st.session_state:
     st.session_state.selected_movie_id = None
@@ -18,19 +19,21 @@ if 'selected_movie_id' not in st.session_state:
 st.title("🎭 Movie Details")
 
 # Check if we have a selected movie
-if 'selected_movie_id' not in st.session_state:
+if 'selected_movie_id' not in st.session_state or not st.session_state.selected_movie_id:
     st.error("🚫 No movie selected!")
     st.info("Please go back to the main page and click 'View Full Details' on a movie.")
     if st.button("🏠 Go to Home Page"):
-        st.switch_page("app.py")
+        # FIX: Changed streamlit_app.py to the new main file name
+        st.switch_page("streamlit_app.py")
     st.stop()
 
 # Check if we have an API key
-if 'api_key' not in st.session_state or not st.session_state.api_key:
-    st.error("🔑 API Key not found!")
-    st.info("Please go back to the main page and enter your API key.")
+if 'api_key' not in st.session_state or not st.session_state.api_key or st.session_state.api_key == "a966a1c4":
+    st.error("🔑 API Key not found or is the default placeholder!")
+    st.info("Please go back to the main page and enter your valid API key.")
     if st.button("🏠 Go to Home Page"):
-        st.switch_page("app.py")
+        # FIX: Changed streamlit_app.py to the new main file name
+        st.switch_page("streamlit_app.py")
     st.stop()
 
 
@@ -150,7 +153,8 @@ st.markdown("---")
 col1, col2 = st.columns([1, 4])
 with col1:
     if st.button("🔙 Back to Search", use_container_width=True, key="back_btn_details"):
-        st.switch_page("app.py")
+        # FIX: Changed streamlit_app.py to the new main file name
+        st.switch_page("streamlit_app.py")
 with col2:
     if st.button("🔄 Try Again", use_container_width=True, key="retry_btn_details"):
         st.rerun()
@@ -158,5 +162,6 @@ with col2:
 # Sidebar navigation
 st.sidebar.markdown("---")
 st.sidebar.title("Navigation")
-st.sidebar.page.link("app.py", label="🏠 Home", icon="🏠")
-st.sidebar.page.link("pages/2_Movie_Details.py", label="Movie Details", icon="🎭", disabled=True)
+# FIX: Changed streamlit_app.py to the new main file name
+st.sidebar.page_link("streamlit_app.py", label="🏠 Home", icon="🏠")
+st.sidebar.page_link("pages/2_Movie_Details.py", label="Movie Details", icon="🎭", disabled=True)

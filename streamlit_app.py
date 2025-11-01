@@ -121,7 +121,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Initialize session state
+# Initialize session state (redundant but safe check)
 if 'movies' not in st.session_state:
     st.session_state.movies = []
 if 'recommendations' not in st.session_state:
@@ -187,7 +187,7 @@ app_mode = st.sidebar.selectbox(
 # Show page links in sidebar
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🎭 Movie Pages")
-st.sidebar.page.link("pages/2_Movie_Details.py", label="Movie Details", icon="🎬")
+st.sidebar.page_link("pages/2_Movie_Details.py", label="Movie Details", icon="🎬") # Path correct
 
 # Show main content only if API key is available
 if client.api_key and client.api_key != "your_actual_api_key_here":
@@ -241,7 +241,7 @@ if client.api_key and client.api_key != "your_actual_api_key_here":
                             st.session_state.selected_movie_id = movie['imdbID']
                             st.session_state.selected_movie_title = movie['Title']
                             # Switch to details page
-                            st.switch_page("pages/2_Movie_Details.py")
+                            st.switch_page("pages/2_Movie_Details.py") # Path correct
 
                         st.markdown("---")
 
@@ -311,7 +311,7 @@ if client.api_key and client.api_key != "your_actual_api_key_here":
                             st.session_state.selected_movie_id = movie['imdbID']
                             st.session_state.selected_movie_title = movie['Title']
                             # Switch to details page
-                            st.switch_page("pages/2_Movie_Details.py")
+                            st.switch_page("pages/2_Movie_Details.py") # Path correct
 
                         # Plot summary in expander
                         if movie.get('Plot') and movie['Plot'] != 'N/A':
