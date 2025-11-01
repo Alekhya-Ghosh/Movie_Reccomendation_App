@@ -187,7 +187,7 @@ app_mode = st.sidebar.selectbox(
 # Show page links in sidebar
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🎭 Movie Pages")
-st.sidebar.page_link("pages/2_Movie_Details.py", label="Movie Details", icon="🎬")
+st.sidebar.page.link("pages/2_Movie_Details.py", label="Movie Details", icon="🎬")
 
 # Show main content only if API key is available
 if client.api_key and client.api_key != "your_actual_api_key_here":
