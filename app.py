@@ -4,6 +4,18 @@ import requests
 # Set your API key directly here (replace with your actual key)
 DEFAULT_API_KEY = "a966a1c4"
 
+# Initialize ALL session state variables at the very beginning
+if 'api_key' not in st.session_state:
+    st.session_state.api_key = DEFAULT_API_KEY
+if 'movies' not in st.session_state:
+    st.session_state.movies = []
+if 'recommendations' not in st.session_state:
+    st.session_state.recommendations = []
+if 'selected_movie_id' not in st.session_state:
+    st.session_state.selected_movie_id = None
+if 'selected_movie_title' not in st.session_state:
+    st.session_state.selected_movie_title = None
+
 
 class OMDbClient:
     def __init__(self, api_key):
@@ -110,8 +122,6 @@ st.set_page_config(
 )
 
 # Initialize session state
-if 'current_movie_details' not in st.session_state:
-    st.session_state.current_movie_details = None
 if 'movies' not in st.session_state:
     st.session_state.movies = []
 if 'recommendations' not in st.session_state:
@@ -120,13 +130,21 @@ if 'recommendations' not in st.session_state:
 # Sidebar for API key input
 st.sidebar.title("🔑 API Configuration")
 
-# API Key input
+# API Key input with unique key
 api_key = st.sidebar.text_input(
     "Enter your OMDB API Key:",
-    value=DEFAULT_API_KEY,
+    value=st.session_state.api_key,  # Use session state value
     type="password",
-    help="Get your free API key from http://www.omdbapi.com/apikey.aspx"
+    help="Get your free API key from http://www.omdbapi.com/apikey.aspx",
+    key="api_key_input_unique"
 )
+
+# Update session state when API key changes
+if api_key != st.session_state.api_key:
+    st.session_state.api_key = api_key
+
+# Store API key in session state for other pages to use
+st.session_state.api_key = api_key
 
 
 # Initialize OMDB client with the API key
@@ -135,7 +153,7 @@ def get_omdb_client(api_key):
     return OMDbClient(api_key)
 
 
-client = get_omdb_client(api_key)
+client = get_omdb_client(st.session_state.api_key)  # Use session state API key
 
 # API Status
 st.sidebar.markdown("### 📊 API Status")
@@ -158,12 +176,18 @@ else:
 st.title("🎬 Movie Recommendation App")
 st.markdown("Discover your next favorite movie based on your preferences!")
 
-# Navigation
+# Navigation in sidebar
 st.sidebar.title("Navigation")
 app_mode = st.sidebar.selectbox(
     "Choose a mode",
-    ["Movie Search", "Get Recommendations", "About"]
+    ["Movie Search", "Get Recommendations", "About"],
+    key="app_mode_select"
 )
+
+# Show page links in sidebar
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 🎭 Movie Pages")
+st.sidebar.page_link("pages/2_Movie_Details.py", label="Movie Details", icon="🎬")
 
 # Show main content only if API key is available
 if client.api_key and client.api_key != "your_actual_api_key_here":
@@ -173,14 +197,13 @@ if client.api_key and client.api_key != "your_actual_api_key_here":
         col1, col2 = st.columns([2, 1])
 
         with col1:
-            search_query = st.text_input("Enter movie title:", placeholder="e.g., Inception", key="search_input")
+            search_query = st.text_input("Enter movie title:", placeholder="e.g., Inception", key="search_input_main")
 
         with col2:
-            search_year = st.text_input("Year (optional):", placeholder="e.g., 2010", key="year_input")
+            search_year = st.text_input("Year (optional):", placeholder="e.g., 2010", key="year_input_main")
 
         # Search button
-        if st.button("Search Movies", key="search_btn") and search_query:
-            st.session_state.current_movie_details = None  # Clear previous details
+        if st.button("Search Movies", key="search_btn_main") and search_query:
             with st.spinner("Searching for movies..."):
                 movies = client.search_movies(search_query, search_year)
                 if movies:
@@ -189,39 +212,6 @@ if client.api_key and client.api_key != "your_actual_api_key_here":
                 else:
                     st.session_state.movies = []
                     st.error("No movies found. Please try a different search term.")
-
-        # Display current movie details if any
-        if st.session_state.current_movie_details:
-            st.markdown("---")
-            st.header("🎭 Movie Details")
-            details = st.session_state.current_movie_details
-
-            col1, col2 = st.columns([1, 2])
-
-            with col1:
-                if details.get('Poster') and details['Poster'] != 'N/A':
-                    st.image(details['Poster'], use_column_width=True)
-                else:
-                    st.info("No poster available")
-
-            with col2:
-                st.subheader(details['Title'])
-                st.write(f"**Year:** {details.get('Year', 'N/A')}")
-                st.write(f"**Rated:** {details.get('Rated', 'N/A')}")
-                st.write(f"**Released:** {details.get('Released', 'N/A')}")
-                st.write(f"**Runtime:** {details.get('Runtime', 'N/A')}")
-                st.write(f"**Genre:** {details.get('Genre', 'N/A')}")
-                st.write(f"**Director:** {details.get('Director', 'N/A')}")
-                st.write(f"**Actors:** {details.get('Actors', 'N/A')}")
-                st.write(f"**IMDB Rating:** {details.get('imdbRating', 'N/A')}/10")
-                st.write(f"**IMDB Votes:** {details.get('imdbVotes', 'N/A')}")
-
-            st.markdown("### 📖 Plot")
-            st.write(details.get('Plot', 'No plot available'))
-
-            if st.button("Close Details"):
-                st.session_state.current_movie_details = None
-                st.rerun()
 
         # Display movies
         if st.session_state.movies:
@@ -245,13 +235,13 @@ if client.api_key and client.api_key != "your_actual_api_key_here":
                         st.write(f"**Year:** {movie.get('Year', 'N/A')}")
                         st.write(f"**Type:** {movie.get('Type', 'N/A').title()}")
 
-                        # View Details button
-                        if st.button(f"View Details", key=f"view_{i}"):
-                            with st.spinner("Loading details..."):
-                                details = client.get_movie_details(movie['imdbID'])
-                                if details:
-                                    st.session_state.current_movie_details = details
-                                    st.rerun()
+                        # Button to view details in new page
+                        if st.button(f"View Full Details", key=f"view_details_{i}"):
+                            # Store the selected movie in session state
+                            st.session_state.selected_movie_id = movie['imdbID']
+                            st.session_state.selected_movie_title = movie['Title']
+                            # Switch to details page
+                            st.switch_page("pages/2_Movie_Details.py")
 
                         st.markdown("---")
 
@@ -265,7 +255,7 @@ if client.api_key and client.api_key != "your_actual_api_key_here":
                 "Enter your favorite movie:",
                 placeholder="e.g., The Dark Knight",
                 help="We'll find similar movies based on genre",
-                key="fav_movie_input"
+                key="fav_movie_input_main"
             )
 
         with col2:
@@ -274,10 +264,10 @@ if client.api_key and client.api_key != "your_actual_api_key_here":
                 min_value=5,
                 max_value=20,
                 value=10,
-                key="rec_slider"
+                key="rec_slider_main"
             )
 
-        if st.button("Get Recommendations", key="rec_btn") and favorite_movie:
+        if st.button("Get Recommendations", key="rec_btn_main") and favorite_movie:
             with st.spinner("Finding recommendations..."):
                 recommendations = client.get_recommendations(favorite_movie, num_recommendations)
                 if recommendations:
@@ -315,9 +305,17 @@ if client.api_key and client.api_key != "your_actual_api_key_here":
                             st.write(f"**⭐ IMDB Rating:** {movie.get('imdbRating', 'N/A')}/10")
                             st.write(f"**⏱️ Runtime:** {movie.get('Runtime', 'N/A')}")
 
+                        # In the button section where you switch to details page:
+                        if st.button(f"View Full Details", key=f"view_details_{i}"):
+                            # Store the selected movie in session state
+                            st.session_state.selected_movie_id = movie['imdbID']
+                            st.session_state.selected_movie_title = movie['Title']
+                            # Switch to details page
+                            st.switch_page("pages/2_Movie_Details.py")
+
                         # Plot summary in expander
                         if movie.get('Plot') and movie['Plot'] != 'N/A':
-                            with st.expander("📖 Plot Summary"):
+                            with st.expander("📖 Quick Plot Summary"):
                                 st.write(movie['Plot'])
 
                         st.markdown("---")
@@ -332,14 +330,14 @@ if client.api_key and client.api_key != "your_actual_api_key_here":
         **✨ Features:**
         - **🔍 Movie Search**: Search for any movie by title and year
         - **🎯 Smart Recommendations**: Get personalized movie suggestions based on your favorites
-        - **📊 Detailed Information**: View comprehensive details including ratings, cast, plots, and more
+        - **📊 Detailed Information**: View comprehensive details in separate pages
         - **🖼️ Movie Posters**: Browse through movie posters and visuals
 
         **🚀 How to use:**
         1. **Enter your API key** in the sidebar
         2. **Movie Search**: Enter a movie title to search the database
         3. **Get Recommendations**: Tell us your favorite movie and we'll suggest similar ones
-        4. **Explore**: Click on movies to see detailed information
+        4. **Click "View Full Details"** to see complete movie information on a separate page
 
         **🎭 Data Source**: Powered by [OMDB API](http://www.omdbapi.com/)
         """)
@@ -358,7 +356,7 @@ else:
 
     **🎯 What you'll get:**
     - Access to thousands of movies
-    - Detailed movie information
+    - Detailed movie information on separate pages
     - Personalized recommendations
     - High-quality movie posters
     """)
