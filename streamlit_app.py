@@ -121,19 +121,13 @@ st.set_page_config(
     layout="wide"
 )
 
-# Initialize session state (redundant but safe check)
-if 'movies' not in st.session_state:
-    st.session_state.movies = []
-if 'recommendations' not in st.session_state:
-    st.session_state.recommendations = []
-
 # Sidebar for API key input
 st.sidebar.title("🔑 API Configuration")
 
 # API Key input with unique key
 api_key = st.sidebar.text_input(
     "Enter your OMDB API Key:",
-    value=st.session_state.api_key,  # Use session state value
+    value=st.session_state.api_key,
     type="password",
     help="Get your free API key from http://www.omdbapi.com/apikey.aspx",
     key="api_key_input_unique"
@@ -143,17 +137,12 @@ api_key = st.sidebar.text_input(
 if api_key != st.session_state.api_key:
     st.session_state.api_key = api_key
 
-# Store API key in session state for other pages to use
-st.session_state.api_key = api_key
-
-
 # Initialize OMDB client with the API key
 @st.cache_resource
 def get_omdb_client(api_key):
     return OMDbClient(api_key)
 
-
-client = get_omdb_client(st.session_state.api_key)  # Use session state API key
+client = get_omdb_client(st.session_state.api_key)
 
 # API Status
 st.sidebar.markdown("### 📊 API Status")
@@ -183,11 +172,6 @@ app_mode = st.sidebar.selectbox(
     ["Movie Search", "Get Recommendations", "About"],
     key="app_mode_select"
 )
-
-# Show page links in sidebar
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 🎭 Movie Pages")
-st.sidebar.page_link("pages/2_Movie_Details.py", label="Movie Details", icon="🎬") # Path correct
 
 # Show main content only if API key is available
 if client.api_key and client.api_key != "your_actual_api_key_here":
@@ -241,7 +225,7 @@ if client.api_key and client.api_key != "your_actual_api_key_here":
                             st.session_state.selected_movie_id = movie['imdbID']
                             st.session_state.selected_movie_title = movie['Title']
                             # Switch to details page
-                            st.switch_page("pages/2_Movie_Details.py") # Path correct
+                            st.switch_page("pages/2_Movie_Details.py")
 
                         st.markdown("---")
 
@@ -305,13 +289,13 @@ if client.api_key and client.api_key != "your_actual_api_key_here":
                             st.write(f"**⭐ IMDB Rating:** {movie.get('imdbRating', 'N/A')}/10")
                             st.write(f"**⏱️ Runtime:** {movie.get('Runtime', 'N/A')}")
 
-                        # In the button section where you switch to details page:
-                        if st.button(f"View Full Details", key=f"view_details_{i}"):
+                        # Button to view details in new page
+                        if st.button(f"View Full Details", key=f"rec_view_{i}"):
                             # Store the selected movie in session state
                             st.session_state.selected_movie_id = movie['imdbID']
                             st.session_state.selected_movie_title = movie['Title']
                             # Switch to details page
-                            st.switch_page("pages/2_Movie_Details.py") # Path correct
+                            st.switch_page("pages/2_Movie_Details.py")
 
                         # Plot summary in expander
                         if movie.get('Plot') and movie['Plot'] != 'N/A':

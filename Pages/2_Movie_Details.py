@@ -8,36 +8,32 @@ st.set_page_config(
     layout="wide"
 )
 
-# Check if session state variables exist, if not initialize them
-# Note: Initializing here ensures the page doesn't crash if accessed directly.
+# Initialize session state variables if they don't exist
 if 'api_key' not in st.session_state:
     st.session_state.api_key = ""
 if 'selected_movie_id' not in st.session_state:
     st.session_state.selected_movie_id = None
 
-
 st.title("🎭 Movie Details")
 
-# --- GUARDRAILS ---
-
-# 1. Check if a movie was selected
-if 'selected_movie_id' not in st.session_state or not st.session_state.selected_movie_id:
+# Check if we have a selected movie
+if not st.session_state.selected_movie_id:
     st.error("🚫 No movie selected!")
     st.info("Please go back to the main page and click 'View Full Details' on a movie.")
     if st.button("🏠 Go to Home Page"):
         st.switch_page("streamlit_app.py")
     st.stop()
 
-# 2. Check for a valid API key
-if 'api_key' not in st.session_state or not st.session_state.api_key or st.session_state.api_key == "a966a1c4":
-    st.error("🔑 API Key not found or is the default placeholder!")
-    st.info("Please go back to the main page and enter your valid API key in the sidebar.")
+# Check if we have an API key
+if not st.session_state.api_key:
+    st.error("🔑 API Key not found!")
+    st.info("Please go back to the main page and enter your API key.")
     if st.button("🏠 Go to Home Page"):
         st.switch_page("streamlit_app.py")
     st.stop()
 
-# --- OMDB CLIENT ---
 
+# Create OMDb client class
 class OMDbClient:
     def __init__(self, api_key):
         self.api_key = api_key
@@ -75,8 +71,6 @@ client = OMDbClient(st.session_state.api_key)
 # Get movie details
 with st.spinner("🎬 Loading movie details..."):
     movie_details = client.get_movie_details(st.session_state.selected_movie_id)
-
-# --- DISPLAY LOGIC ---
 
 if movie_details:
     # Display movie details in a beautiful layout
@@ -163,6 +157,5 @@ with col2:
 # Sidebar navigation
 st.sidebar.markdown("---")
 st.sidebar.title("Navigation")
-# Correction: Use st.sidebar.page_link() which is the recommended syntax
 st.sidebar.page_link("streamlit_app.py", label="🏠 Home", icon="🏠")
 st.sidebar.page_link("pages/2_Movie_Details.py", label="Movie Details", icon="🎭", disabled=True)
