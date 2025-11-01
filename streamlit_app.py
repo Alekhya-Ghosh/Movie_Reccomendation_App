@@ -219,13 +219,13 @@ if client.api_key and client.api_key != "your_actual_api_key_here":
                         st.write(f"**Year:** {movie.get('Year', 'N/A')}")
                         st.write(f"**Type:** {movie.get('Type', 'N/A').title()}")
 
-                        # Button to view details in new page
+                        # Button to view details in new page - FIXED
                         if st.button(f"View Full Details", key=f"view_details_{i}"):
                             # Store the selected movie in session state
                             st.session_state.selected_movie_id = movie['imdbID']
                             st.session_state.selected_movie_title = movie['Title']
-                            # Switch to details page
-                            st.switch_page("pages/2_Movie_Details.py")
+                            # Switch to details page - CHANGED TO page_link
+                            st.page_link("pages/2_Movie_Details.py", label="Go to Movie Details", icon="🎬")
 
                         st.markdown("---")
 
@@ -289,13 +289,13 @@ if client.api_key and client.api_key != "your_actual_api_key_here":
                             st.write(f"**⭐ IMDB Rating:** {movie.get('imdbRating', 'N/A')}/10")
                             st.write(f"**⏱️ Runtime:** {movie.get('Runtime', 'N/A')}")
 
-                        # Button to view details in new page
+                        # Button to view details in new page - FIXED
                         if st.button(f"View Full Details", key=f"rec_view_{i}"):
                             # Store the selected movie in session state
                             st.session_state.selected_movie_id = movie['imdbID']
                             st.session_state.selected_movie_title = movie['Title']
-                            # Switch to details page
-                            st.switch_page("pages/2_Movie_Details.py")
+                            # Switch to details page - CHANGED TO page_link
+                            st.page_link("pages/2_Movie_Details.py", label="Go to Movie Details", icon="🎬")
 
                         # Plot summary in expander
                         if movie.get('Plot') and movie['Plot'] != 'N/A':
