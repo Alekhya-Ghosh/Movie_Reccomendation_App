@@ -48,7 +48,7 @@ class OMDbClient:
         params = {
             'apikey': self.api_key,
             'i': imdb_id,
-            'plot': 'short'
+            'plot': 'full'
         }
 
         try:
@@ -108,6 +108,12 @@ st.set_page_config(
     page_icon="🎬",
     layout="wide"
 )
+
+# Initialize session state for movie details
+if 'show_details' not in st.session_state:
+    st.session_state.show_details = None
+if 'movie_details' not in st.session_state:
+    st.session_state.movie_details = None
 
 # Sidebar for API key input
 st.sidebar.title("🔑 API Configuration")
@@ -170,44 +176,82 @@ if client.api_key and client.api_key != "your_actual_api_key_here":
         with col2:
             search_year = st.text_input("Year (optional):", placeholder="e.g., 2010", key="year_input")
 
+        # Clear details when new search is performed
         if st.button("Search Movies", key="search_btn") and search_query:
+            st.session_state.show_details = None
+            st.session_state.movie_details = None
             with st.spinner("Searching for movies..."):
                 movies = client.search_movies(search_query, search_year)
 
                 if movies:
                     st.success(f"Found {len(movies)} movies!")
+                    st.session_state.movies = movies  # Store movies in session state
 
-                    # Display movies in a grid
-                    cols = st.columns(3)
-                    for i, movie in enumerate(movies):
-                        with cols[i % 3]:
-                            with st.container():
-                                st.subheader(movie['Title'])
+        # Display movies from session state or new search
+        if 'movies' in st.session_state and st.session_state.movies:
+            movies = st.session_state.movies
 
-                                # Poster
-                                if movie.get('Poster') and movie['Poster'] != 'N/A':
-                                    st.image(movie['Poster'], use_column_width=True)
-                                else:
-                                    st.info("🎭 No poster available")
+            # Display movies in a grid
+            cols = st.columns(3)
+            for i, movie in enumerate(movies):
+                with cols[i % 3]:
+                    with st.container():
+                        st.subheader(movie['Title'])
 
-                                st.write(f"**Year:** {movie.get('Year', 'N/A')}")
-                                st.write(f"**Type:** {movie.get('Type', 'N/A').title()}")
+                        # Poster
+                        if movie.get('Poster') and movie['Poster'] != 'N/A':
+                            st.image(movie['Poster'], use_column_width=True)
+                        else:
+                            st.info("🎭 No poster available")
 
-                                # Get detailed information
-                                if st.button(f"View Details", key=f"view_{i}"):
-                                    with st.spinner("Loading details..."):
-                                        details = client.get_movie_details(movie['imdbID'])
-                                        if details:
-                                            st.write(f"**Director:** {details.get('Director', 'N/A')}")
-                                            st.write(f"**Actors:** {details.get('Actors', 'N/A')}")
-                                            st.write(f"**Plot:** {details.get('Plot', 'N/A')}")
-                                            st.write(f"**Rating:** {details.get('imdbRating', 'N/A')}/10")
-                                            st.write(f"**Genre:** {details.get('Genre', 'N/A')}")
-                                            st.write(f"**Runtime:** {details.get('Runtime', 'N/A')}")
+                        st.write(f"**Year:** {movie.get('Year', 'N/A')}")
+                        st.write(f"**Type:** {movie.get('Type', 'N/A').title()}")
 
-                                st.markdown("---")
-                else:
-                    st.error("No movies found. Please try a different search term.")
+                        # Get detailed information
+                        if st.button(f"View Details", key=f"view_{i}"):
+                            with st.spinner("Loading details..."):
+                                details = client.get_movie_details(movie['imdbID'])
+                                if details:
+                                    st.session_state.show_details = movie['imdbID']
+                                    st.session_state.movie_details = details
+                                    st.rerun()
+
+                        st.markdown("---")
+
+            # Show movie details if a movie was selected
+            if st.session_state.show_details and st.session_state.movie_details:
+                st.markdown("---")
+                st.header("🎭 Movie Details")
+                details = st.session_state.movie_details
+
+                col1, col2 = st.columns([1, 2])
+
+                with col1:
+                    if details.get('Poster') and details['Poster'] != 'N/A':
+                        st.image(details['Poster'], width=300)
+                    else:
+                        st.info("No poster available")
+
+                with col2:
+                    st.subheader(details['Title'])
+                    st.write(f"**Year:** {details.get('Year', 'N/A')}")
+                    st.write(f"**Rated:** {details.get('Rated', 'N/A')}")
+                    st.write(f"**Released:** {details.get('Released', 'N/A')}")
+                    st.write(f"**Runtime:** {details.get('Runtime', 'N/A')}")
+                    st.write(f"**Genre:** {details.get('Genre', 'N/A')}")
+                    st.write(f"**Director:** {details.get('Director', 'N/A')}")
+                    st.write(f"**Actors:** {details.get('Actors', 'N/A')}")
+                    st.write(f"**IMDB Rating:** {details.get('imdbRating', 'N/A')}/10")
+                    st.write(f"**IMDB Votes:** {details.get('imdbVotes', 'N/A')}")
+
+                st.markdown("### Plot")
+                st.write(details.get('Plot', 'No plot available'))
+
+                # Button to close details
+                if st.button("Close Details"):
+                    st.session_state.show_details = None
+                    st.session_state.movie_details = None
+                    st.rerun()
 
     elif app_mode == "Get Recommendations":
         st.header("🎯 Get Movie Recommendations")
@@ -237,39 +281,42 @@ if client.api_key and client.api_key != "your_actual_api_key_here":
 
                 if recommendations:
                     st.success(f"Found {len(recommendations)} recommendations!")
+                    st.session_state.recommendations = recommendations
 
-                    # Display recommendations in a grid
-                    cols = st.columns(2)
+        # Display recommendations from session state
+        if 'recommendations' in st.session_state and st.session_state.recommendations:
+            recommendations = st.session_state.recommendations
 
-                    for i, movie in enumerate(recommendations):
-                        with cols[i % 2]:
-                            with st.container():
-                                st.subheader(f"🎭 {movie['Title']}")
+            # Display recommendations in a grid
+            cols = st.columns(2)
 
-                                # Movie poster and info in columns
-                                col_img, col_info = st.columns([1, 2])
+            for i, movie in enumerate(recommendations):
+                with cols[i % 2]:
+                    with st.container():
+                        st.subheader(f"🎭 {movie['Title']}")
 
-                                with col_img:
-                                    if movie.get('Poster') and movie['Poster'] != 'N/A':
-                                        st.image(movie['Poster'], use_column_width=True)
-                                    else:
-                                        st.info("📸 No poster")
+                        # Movie poster and info in columns
+                        col_img, col_info = st.columns([1, 2])
 
-                                with col_info:
-                                    st.write(f"**📅 Year:** {movie.get('Year', 'N/A')}")
-                                    st.write(f"**🎭 Genre:** {movie.get('Genre', 'N/A')}")
-                                    st.write(f"**🎬 Director:** {movie.get('Director', 'N/A')}")
-                                    st.write(f"**⭐ IMDB Rating:** {movie.get('imdbRating', 'N/A')}/10")
-                                    st.write(f"**⏱️ Runtime:** {movie.get('Runtime', 'N/A')}")
+                        with col_img:
+                            if movie.get('Poster') and movie['Poster'] != 'N/A':
+                                st.image(movie['Poster'], use_column_width=True)
+                            else:
+                                st.info("📸 No poster")
 
-                                # Plot summary in expander
-                                if movie.get('Plot') and movie['Plot'] != 'N/A':
-                                    with st.expander("📖 Plot Summary"):
-                                        st.write(movie['Plot'])
+                        with col_info:
+                            st.write(f"**📅 Year:** {movie.get('Year', 'N/A')}")
+                            st.write(f"**🎭 Genre:** {movie.get('Genre', 'N/A')}")
+                            st.write(f"**🎬 Director:** {movie.get('Director', 'N/A')}")
+                            st.write(f"**⭐ IMDB Rating:** {movie.get('imdbRating', 'N/A')}/10")
+                            st.write(f"**⏱️ Runtime:** {movie.get('Runtime', 'N/A')}")
 
-                                st.markdown("---")
-                else:
-                    st.error("No recommendations found. Please try a different movie.")
+                        # Plot summary in expander
+                        if movie.get('Plot') and movie['Plot'] != 'N/A':
+                            with st.expander("📖 Plot Summary"):
+                                st.write(movie['Plot'])
+
+                        st.markdown("---")
 
     else:
         st.header("About This App")
