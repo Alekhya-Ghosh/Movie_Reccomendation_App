@@ -159,4 +159,4 @@ with col2:
 st.sidebar.markdown("---")
 st.sidebar.title("Navigation")
 st.sidebar.page_link("app.py", label="🏠 Home", icon="🏠")
-st.sidebar.page_link("pages/2_Movie_Details.py", label="🎭 Movie Details", icon="🎭", disabled=True)
+st.sidebar.page_link("pages/2_Movie_Details.py", label="Movie Details", icon="🎭", disabled=True)
